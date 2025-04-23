@@ -25,20 +25,38 @@ extern "C" {
  * @{
  */
 
+typedef enum msgpack_sbuffer_mode_t: signed char {
+    .Malloc,
+    .Static
+} msgpack_sbuffer_mode_t;
+
+typedef enum msgpack_error_t : int {
+
+} msgpack_error_t;
 typedef struct msgpack_sbuffer {
     size_t size;
     char* data;
     size_t alloc;
+    msgpack_sbuffer_mode_t mode;
 } msgpack_sbuffer;
 
 static inline void msgpack_sbuffer_init(msgpack_sbuffer* sbuf)
-{
+{    
     memset(sbuf, 0, sizeof(msgpack_sbuffer));
+    sbuf->mode = .Malloc;
+}
+static inline void msgpack_sbuffer_init_static(msgpack_sbuffer* sbuf,  char* data , size_t size) {
+
+    memset(sbuf, 0, sizeof(msgpack_sbuffer));
+    sbuf->mode = .static;
+    sbuf->data=data;
+    sbuf->alloc = size;
 }
 
 static inline void msgpack_sbuffer_destroy(msgpack_sbuffer* sbuf)
-{
+{    if (sbuf->mode == .Malloc) {
     free(sbuf->data);
+    }
 }
 
 static inline msgpack_sbuffer* msgpack_sbuffer_new(void)
@@ -63,7 +81,7 @@ static inline int msgpack_sbuffer_write(void* data, const char* buf, size_t len)
 
     assert(buf || len == 0);
     if(!buf) return 0;
-
+if (sbuf->mode == .Malloc) {
     if(sbuf->alloc - sbuf->size < len) {
         void* tmp;
         size_t nsize = (sbuf->alloc) ?
@@ -84,7 +102,7 @@ static inline int msgpack_sbuffer_write(void* data, const char* buf, size_t len)
         sbuf->data = (char*)tmp;
         sbuf->alloc = nsize;
     }
-
+}
     memcpy(sbuf->data + sbuf->size, buf, len);
     sbuf->size += len;
 
